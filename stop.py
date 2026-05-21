@@ -1,88 +1,16 @@
 from __future__ import annotations
 
 import os
-import shlex
 import signal
-import subprocess
 import sys
 import time
-from pathlib import Path
+
+from utils.bot_cli import format_trading_plan, resolve_trading_plan
+from utils.bot_process import find_bot_processes
 
 
-REPO_ROOT = Path(__file__).resolve().parent
-ENTRYPOINTS = ("start.py", "main.py")
 STOP_TIMEOUT_SECONDS = 10.0
 POLL_INTERVAL_SECONDS = 0.25
-
-
-def process_rows() -> list[tuple[int, str]]:
-    result = subprocess.run(
-        ["ps", "-axo", "pid=,command="],
-        check=True,
-        capture_output=True,
-        text=True,
-    )
-
-    rows: list[tuple[int, str]] = []
-    for line in result.stdout.splitlines():
-        stripped = line.strip()
-        if not stripped:
-            continue
-        pid_text, _, command = stripped.partition(" ")
-        if not command:
-            continue
-        try:
-            rows.append((int(pid_text), command.strip()))
-        except ValueError:
-            continue
-    return rows
-
-
-def process_cwd(pid: int) -> Path | None:
-    proc_cwd = Path(f"/proc/{pid}/cwd")
-    if proc_cwd.exists():
-        try:
-            return proc_cwd.resolve()
-        except OSError:
-            return None
-
-    try:
-        result = subprocess.run(
-            ["lsof", "-a", "-p", str(pid), "-d", "cwd", "-Fn"],
-            check=False,
-            capture_output=True,
-            text=True,
-        )
-    except FileNotFoundError:
-        return None
-
-    for line in result.stdout.splitlines():
-        if line.startswith("n"):
-            return Path(line[1:]).resolve()
-    return None
-
-
-def command_tokens(command: str) -> list[str]:
-    try:
-        return shlex.split(command)
-    except ValueError:
-        return command.split()
-
-
-def references_this_bot(pid: int, command: str) -> bool:
-    script_paths = {str((REPO_ROOT / entrypoint).resolve()) for entrypoint in ENTRYPOINTS}
-    if any(script_path in command for script_path in script_paths):
-        return True
-
-    tokens = command_tokens(command)
-    if not any(Path(token).name in ENTRYPOINTS for token in tokens):
-        return False
-
-    cwd = process_cwd(pid)
-    if cwd is None:
-        return False
-
-    return cwd == REPO_ROOT
 
 
 def is_running(pid: int) -> bool:
@@ -124,12 +52,14 @@ def stop_process(pid: int, command: str) -> bool:
 
 
 def main() -> int:
-    current_pid = os.getpid()
-    matches = [
-        (pid, command)
-        for pid, command in process_rows()
-        if pid != current_pid and references_this_bot(pid, command)
-    ]
+    try:
+        symbols, summary = resolve_trading_plan()
+    except ValueError as exc:
+        print(str(exc), file=sys.stderr)
+        return 2
+
+    print(format_trading_plan(symbols, summary))
+    matches = find_bot_processes()
 
     if not matches:
         print("No running trading bot process found.")

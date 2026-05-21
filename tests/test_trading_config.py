@@ -91,6 +91,21 @@ def test_instrument_settings_falls_back_to_globals() -> None:
     assert s.take_profit_percent == 0.6
 
 
+def test_active_trading_symbols_all_three_enabled() -> None:
+    config = {
+        "trading": {
+            "instruments": {
+                "BTCUSD": {"enabled": True, "product_id": 27, "contract_value": 0.001, "timeframe": "5m"},
+                "ETHUSD": {"enabled": True, "product_id": 3136, "contract_value": 0.01, "timeframe": "5m"},
+                "XAUTUSD": {"enabled": True, "product_id": 131253, "contract_value": 0.001, "timeframe": "5m"},
+            }
+        }
+    }
+    normalize_trading_config(config)
+    assert active_trading_symbols(config) == ["BTCUSD", "ETHUSD", "XAUTUSD"]
+    assert "XAUTUSD:5m" in timeframe_summary(config)
+
+
 def test_timeframe_summary() -> None:
     config = {
         "trading": {

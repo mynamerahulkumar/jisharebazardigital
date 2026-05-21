@@ -31,7 +31,7 @@ trading:
       stop_loss_percent: 0.15
       take_profit_percent: 0.3
   # Populated from instruments by load_config (enabled symbols only):
-  symbols: ["BTCUSD", "ETHUSD"]
+  symbols: ["BTCUSD", "ETHUSD", "XAUTUSD"]
   product_ids:
     BTCUSD: 27
     ETHUSD: 3136
