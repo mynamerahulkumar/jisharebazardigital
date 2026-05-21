@@ -1,0 +1,124 @@
+exchange:
+  api_key: "${DELTA_API_KEY}"
+  api_secret: "${DELTA_API_SECRET}"
+  base_url: "https://api.india.delta.exchange"
+  websocket_url: "wss://socket.india.delta.exchange"
+
+trading:
+  instruments:
+    BTCUSD:
+      enabled: true
+      product_id: 27
+      contract_value: 0.001
+      quantity: 10
+      timeframe: "5m"
+      stop_loss_percent: 0.2
+      take_profit_percent: 0.4
+    ETHUSD:
+      enabled: true
+      product_id: 3136
+      contract_value: 0.01
+      quantity: 5
+      timeframe: "5m"
+      stop_loss_percent: 0.25
+      take_profit_percent: 0.5
+    XAUTUSD:
+      enabled: true
+      product_id: 131253
+      contract_value: 0.001
+      quantity: 10
+      timeframe: "5m"
+      stop_loss_percent: 0.15
+      take_profit_percent: 0.3
+  # Populated from instruments by load_config (enabled symbols only):
+  symbols: ["BTCUSD", "ETHUSD"]
+  product_ids:
+    BTCUSD: 27
+    ETHUSD: 3136
+    XAUTUSD: 131253
+  contract_value_by_symbol:
+    BTCUSD: 0.001
+    ETHUSD: 0.01
+    XAUTUSD: 0.001
+  timeframe: "5m"
+  leverage: 25
+  quantity: 10
+  order_type: "market_order"
+  paper_trading: false
+
+signal_engine:
+  signal_check_interval_seconds: 5
+  # When true (default), longs need a bullish completed body unless overridden by bollinger_bands.require_bullish_candle_for_buy
+  candle_confirmation_enabled: true
+  breakout_confirmation_candles: 1
+  cooldown_seconds: 300
+
+bollinger_bands:
+  bb_enabled: true
+  bb_length: 20
+  bb_std_dev: 2.0
+  bb_source: "close"
+  # Same units as price (high/low). Long arms when min(low) <= lower_band + this; short when max(high) >= upper_band - this. 0 = strict touch only.
+  band_proximity_points: 100
+  # Raise/lower the effective band used only for proximity (when bot BB differs from chart, e.g. +5 if chart lower is 5 above yours).
+  band_touch_offset_lower_points: 50
+  band_touch_offset_upper_points: 50
+  # Include the live bar’s high/low in proximity (confirmation still uses last two closed bars only).
+  band_touch_include_forming_candle: true
+  # Breakout vs previous candle: include forming bar high/low in max(high)/min(low) used for entry.
+  buy_breakout_include_forming: true
+  sell_breakout_include_forming: true
+  # Also count websocket last price toward breakout (more aggressive between candle closes).
+  buy_breakout_use_live_price: false
+  sell_breakout_use_live_price: false
+  # Explicit body filter overrides signal_engine.candle_confirmation_enabled when set here.
+  # require_bullish_candle_for_buy: true
+  # require_bearish_candle_for_sell: true
+
+rsi:
+  rsi_enabled: true
+  rsi_length: 14
+  rsi_buy_level: 30
+  rsi_sell_level: 70
+
+signal_control:
+  enable_buy_signals: true
+  enable_sell_signals: true
+
+risk_management:
+  stop_loss_percent: 0.2
+  take_profit_percent: 0.4
+  trailing_stop:
+    enabled: false
+    trail_percent: 0.25
+  break_even_enabled: false
+  max_trades_per_day: 5
+  max_open_positions: 5
+  daily_loss_limit: 1500.0
+  # Send TP/SL to Delta (CreateOrderRequest bracket_* or POST /orders/bracket), not only in-bot monitoring
+  exchange_bracket_orders: true
+  # Alias for exchange_bracket_orders (see bkp/tp_sl_delta.md)
+  enable_bracket_tp_sl: true
+  bracket_stop_trigger_method: "mark_price"
+  # Limit price offset from trigger for combined POST /v2/orders (percent, same style as stop_loss_percent)
+  tp_limit_buffer_percent: 0.1
+  sl_limit_buffer_percent: 0.1
+
+session:
+  trading_start_time: "00:00"
+  trading_end_time: "23:59"
+  square_off_time: "23:55"
+
+system:
+  # Seconds run_bot_once.py tails logs/cli.log; trading bot keeps running after the script exits.
+  run_bot_once_cli_follow_seconds: 30
+  websocket_enabled: true
+  colored_console: true
+  log_to_file: true
+  log_rotation_enabled: true
+  max_log_file_size_mb: 10
+  retry_count: 5
+  retry_delay: 5
+  candle_history_limit: 200
+  dashboard_enabled: true
+  dashboard_exchange_positions: true

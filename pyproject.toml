@@ -1,0 +1,15 @@
+[project]
+name = "delta-bb-rsi-bot"
+version = "0.1.0"
+description = "Lightweight Delta Exchange Bollinger Band + RSI trading bot"
+requires-python = ">=3.11"
+dependencies = [
+  "aiohttp",
+  "websockets",
+  "rich",
+  "pyyaml",
+  "python-dotenv",
+]
+
+[tool.uv]
+package = false
