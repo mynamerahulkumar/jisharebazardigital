@@ -92,7 +92,7 @@ risk_management:
     enabled: false
     trail_percent: 0.25
   break_even_enabled: false
-  max_trades_per_day: 7
+  max_trades_per_day: 56
   max_open_positions: 5
   daily_loss_limit: 1500.0
   # Send TP/SL to Delta (CreateOrderRequest bracket_* or POST /orders/bracket), not only in-bot monitoring
