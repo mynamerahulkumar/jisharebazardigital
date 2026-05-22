@@ -5,7 +5,8 @@ import signal
 import sys
 import time
 
-from utils.bot_cli import format_trading_plan, resolve_trading_plan
+from utils.bot_cli import format_daily_trade_usage, format_trading_plan, resolve_trading_plan
+from utils.helpers import load_config
 from utils.bot_process import find_bot_processes
 
 
@@ -53,12 +54,14 @@ def stop_process(pid: int, command: str) -> bool:
 
 def main() -> int:
     try:
-        symbols, summary = resolve_trading_plan()
+        config = load_config()
+        symbols, summary = resolve_trading_plan(config)
     except ValueError as exc:
         print(str(exc), file=sys.stderr)
         return 2
 
-    print(format_trading_plan(symbols, summary))
+    print(format_trading_plan(symbols, summary, config))
+    print(format_daily_trade_usage(config))
     matches = find_bot_processes()
 
     if not matches:

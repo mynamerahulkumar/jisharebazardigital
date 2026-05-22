@@ -16,5 +16,21 @@ def resolve_trading_plan(config: dict[str, Any] | None = None) -> tuple[list[str
     return symbols, timeframe_summary(cfg, symbols)
 
 
-def format_trading_plan(symbols: list[str], summary: str) -> str:
-    return f"Trading plan: {len(symbols)} symbol(s) — {', '.join(symbols)} | {summary}"
+def format_trading_plan(symbols: list[str], summary: str, config: dict[str, Any] | None = None) -> str:
+    cfg = config if config is not None else load_config()
+    max_trades = int(cfg["risk_management"]["max_trades_per_day"])
+    return (
+        f"Trading plan: {len(symbols)} symbol(s) — {', '.join(symbols)} | {summary} | "
+        f"max_trades_per_day={max_trades}"
+    )
+
+
+def format_daily_trade_usage(config: dict[str, Any] | None = None) -> str:
+    """Entries used today vs config limit (same CSV as TradingBot / start.py)."""
+    from utils.trade_tracker import TradeTracker
+
+    cfg = config if config is not None else load_config()
+    max_trades = int(cfg["risk_management"]["max_trades_per_day"])
+    used = TradeTracker().entries_used_today()
+    remaining = max(max_trades - used, 0)
+    return f"Daily entries (logs/trades.csv): {used}/{max_trades} used, {remaining} remaining"

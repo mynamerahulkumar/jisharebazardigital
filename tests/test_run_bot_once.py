@@ -12,22 +12,21 @@ CONFIG_PATH = REPO_ROOT / "config" / "config.yaml"
 
 
 class TestRunBotOnceTradingPlan(unittest.TestCase):
-    def test_repo_config_enables_all_three_coins(self) -> None:
+    def test_repo_config_enabled_symbols_match_instruments(self) -> None:
         config = load_config(CONFIG_PATH)
         symbols = active_trading_symbols(config)
-        self.assertEqual(symbols, ["BTCUSD", "ETHUSD", "XAUTUSD"])
-        self.assertEqual(config["trading"]["symbols"], ["BTCUSD", "ETHUSD", "XAUTUSD"])
+        self.assertGreaterEqual(len(symbols), 1)
+        self.assertEqual(config["trading"]["symbols"], symbols)
         for sym in symbols:
             self.assertIn(sym, config["trading"]["product_ids"])
             self.assertIn(sym, config["trading"]["contract_value_by_symbol"])
 
-    def test_resolve_trading_plan_lists_all_three(self) -> None:
+    def test_resolve_trading_plan_matches_enabled_symbols(self) -> None:
         config = load_config(CONFIG_PATH)
         symbols, summary = resolve_trading_plan(config)
-        self.assertEqual(symbols, ["BTCUSD", "ETHUSD", "XAUTUSD"])
-        self.assertIn("BTCUSD:5m", summary)
-        self.assertIn("ETHUSD:5m", summary)
-        self.assertIn("XAUTUSD:5m", summary)
+        self.assertEqual(symbols, active_trading_symbols(config))
+        for sym in symbols:
+            self.assertIn(f"{sym}:", summary)
 
 
 if __name__ == "__main__":

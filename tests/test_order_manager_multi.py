@@ -7,6 +7,12 @@ from broker.order_manager import OrderManager
 from utils.helpers import CriticalBotError, PositionState
 
 
+def _tracker_mock() -> MagicMock:
+    tracker = MagicMock()
+    tracker.entries_used_today.return_value = 0
+    return tracker
+
+
 def _config(max_open: int = 5) -> dict:
     return {
         "trading": {
@@ -37,6 +43,7 @@ def _config(max_open: int = 5) -> dict:
         "risk_management": {
             "stop_loss_percent": 0.2,
             "take_profit_percent": 0.4,
+            "max_trades_per_day": 100,
             "max_open_positions": max_open,
             "exchange_bracket_orders": False,
         },
@@ -45,13 +52,13 @@ def _config(max_open: int = 5) -> dict:
 
 class OrderManagerMultiTest(unittest.IsolatedAsyncioTestCase):
     async def test_position_for_returns_inactive_by_default(self) -> None:
-        om = OrderManager(_config(), AsyncMock(), MagicMock(), MagicMock())
+        om = OrderManager(_config(), AsyncMock(), _tracker_mock(), MagicMock())
         pos = om.position_for("BTCUSD")
         self.assertFalse(pos.active)
         self.assertEqual(pos.symbol, "BTCUSD")
 
     async def test_validate_exit_ignores_inactive_symbol(self) -> None:
-        om = OrderManager(_config(), AsyncMock(), MagicMock(), MagicMock())
+        om = OrderManager(_config(), AsyncMock(), _tracker_mock(), MagicMock())
         om.positions["BTCUSD"] = PositionState(
             symbol="BTCUSD",
             active=True,
@@ -68,7 +75,7 @@ class OrderManagerMultiTest(unittest.IsolatedAsyncioTestCase):
 
     async def test_open_blocks_when_max_open_positions_reached(self) -> None:
         client = AsyncMock()
-        om = OrderManager(_config(max_open=1), client, MagicMock(), MagicMock())
+        om = OrderManager(_config(max_open=1), client, _tracker_mock(), MagicMock())
         om.positions["BTCUSD"] = PositionState(
             symbol="BTCUSD", active=True, side="buy", entry_price=1.0, quantity=1.0
         )
@@ -77,7 +84,7 @@ class OrderManagerMultiTest(unittest.IsolatedAsyncioTestCase):
 
     async def test_open_blocks_duplicate_symbol(self) -> None:
         client = AsyncMock()
-        om = OrderManager(_config(), client, MagicMock(), MagicMock())
+        om = OrderManager(_config(), client, _tracker_mock(), MagicMock())
         om.positions["ETHUSD"] = PositionState(
             symbol="ETHUSD", active=True, side="sell", entry_price=1.0, quantity=1.0
         )
@@ -85,7 +92,7 @@ class OrderManagerMultiTest(unittest.IsolatedAsyncioTestCase):
             await om.open_position("ETHUSD", "buy", 2000.0)
 
     def test_active_position_count(self) -> None:
-        om = OrderManager(_config(), AsyncMock(), MagicMock(), MagicMock())
+        om = OrderManager(_config(), AsyncMock(), _tracker_mock(), MagicMock())
         self.assertEqual(om.active_position_count, 0)
         om.positions["BTCUSD"] = PositionState(
             symbol="BTCUSD", active=True, side="buy", entry_price=1.0, quantity=1.0
@@ -95,7 +102,7 @@ class OrderManagerMultiTest(unittest.IsolatedAsyncioTestCase):
 
     async def test_open_position_uses_per_symbol_quantity(self) -> None:
         client = AsyncMock()
-        om = OrderManager(_config(), client, MagicMock(), MagicMock())
+        om = OrderManager(_config(), client, _tracker_mock(), MagicMock())
         await om.open_position("ETHUSD", "buy", 3000.0)
         pos = om.positions["ETHUSD"]
         self.assertEqual(pos.quantity, 5.0)

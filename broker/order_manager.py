@@ -147,6 +147,15 @@ class OrderManager:
         if existing.active:
             raise CriticalBotError(f"Order attempted while {symbol} position is already active")
 
+        risk = self.config.get("risk_management", {})
+        max_trades = int(risk.get("max_trades_per_day", 0))
+        if max_trades > 0:
+            entries_used = self.tracker.entries_used_today()
+            if entries_used >= max_trades:
+                raise CriticalBotError(
+                    f"DAILY TRADE LIMIT REACHED | Entries used today: {entries_used}/{max_trades}"
+                )
+
         max_open = int(self.config["risk_management"].get("max_open_positions", 1))
         if self.active_position_count >= max_open:
             raise CriticalBotError(
@@ -322,20 +331,13 @@ class OrderManager:
         else:
             self.logger.info("POSITION CLOSED (sync, no exit order) | SYMBOL=%s | REASON=%s", symbol, reason)
         realized_pnl = self._calculate_pnl(position, price)
-        self.tracker.append(
-            TradeRecord(
-                timestamp=format_ist(),
-                trade_date=today_ist(),
-                symbol=symbol,
-                side=position.side,
-                quantity=position.quantity,
-                entry_price=position.entry_price,
-                exit_price=price,
-                realized_pnl=realized_pnl,
-                status="CLOSED",
-                reason=reason,
-                paper_trading=self.paper_trading,
-            )
+        self.tracker.close_open_row(
+            symbol,
+            exit_price=price,
+            realized_pnl=realized_pnl,
+            reason=reason,
+            paper_trading=self.paper_trading,
+            closed_at=format_ist(),
         )
         self.logger.info("POSITION CLOSED | SYMBOL=%s | REASON=%s | PNL=%.2f", symbol, reason, realized_pnl)
         del self.positions[symbol]

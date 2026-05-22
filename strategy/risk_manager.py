@@ -9,13 +9,23 @@ class RiskManager:
         self.config = config
         self.tracker = tracker
 
+    def max_trades_per_day(self) -> int:
+        return int(self.config["risk_management"]["max_trades_per_day"])
+
+    def can_open_new_trade(self) -> bool:
+        """Whether another entry is allowed today (enforced before every new open)."""
+        return self.tracker.entries_used_today() < self.max_trades_per_day()
+
     def validate_daily_limits(self, position_active: bool = False) -> None:
+        """Stop the bot when at the daily entry limit and no positions left to manage."""
         risk = self.config["risk_management"]
-        trades_today = self.tracker.count_today()
-        max_trades = int(risk["max_trades_per_day"])
-        if trades_today >= max_trades and not position_active:
+        entries_used = self.tracker.entries_used_today()
+        max_trades = self.max_trades_per_day()
+        if entries_used >= max_trades and not position_active:
+            open_rows = self.tracker.count_today()
             raise CriticalBotError(
-                f"DAILY TRADE LIMIT REACHED | Total trades today: {trades_today}/{max_trades}"
+                f"DAILY TRADE LIMIT REACHED | Entries used today: {entries_used}/{max_trades} "
+                f"(open rows: {open_rows}, closed: {self.tracker.closed_count_today()})"
             )
         daily_pnl = self.tracker.daily_realized_pnl()
         loss_limit = float(risk.get("daily_loss_limit", 0))
@@ -30,7 +40,7 @@ class RiskManager:
         return self.tracker.closed_count_today()
 
     def trades_today(self) -> int:
-        return self.tracker.count_today()
+        return self.tracker.entries_used_today()
 
     def daily_pnl(self) -> float:
         return self.tracker.daily_realized_pnl()

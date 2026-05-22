@@ -129,7 +129,7 @@ def _risk_exchange_table(snapshot: BotMonitorSnapshot) -> Table:
     table = Table(title="Risk & Exchange", expand=True)
     table.add_column("Metric", style="green")
     table.add_column("Value")
-    table.add_row("Opens today (bot CSV)", _opens_today_cell(snapshot))
+    table.add_row("Entries used today (bot CSV)", _opens_today_cell(snapshot))
     table.add_row("Closes today (bot CSV)", str(snapshot.closed_trades_today))
     table.add_row(
         "CSV scope",
@@ -148,7 +148,10 @@ def _risk_exchange_table(snapshot: BotMonitorSnapshot) -> Table:
 
 def _opens_today_cell(snapshot: BotMonitorSnapshot) -> str:
     ex = snapshot.exchange_positions
-    cell = f"{snapshot.trades_today} / {snapshot.max_trades_per_day} (OPEN rows in logs/trades.csv)"
+    cell = (
+        f"{snapshot.trades_today} / {snapshot.max_trades_per_day} "
+        f"(entries today in logs/trades.csv; ORPHAN rows excluded)"
+    )
     if ex.source == "ok":
         cell += f" — exchange {ex.open_count} open"
     return cell

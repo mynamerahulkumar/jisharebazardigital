@@ -169,6 +169,13 @@ class TradingBot:
             current_price,
         )
 
+        if decision.should_trade and not self.risk_manager.can_open_new_trade():
+            decision.action = "hold"
+            decision.status = "SIGNAL_REJECTED"
+            decision.rejected_reason = (
+                f"daily trade limit reached "
+                f"({self.risk_manager.trades_today()}/{self.risk_manager.max_trades_per_day()})"
+            )
         if decision.should_trade and self.risk_manager.validate_open_position_limit(
             self.order_manager.active_position_count
         ):

@@ -9,7 +9,8 @@ from pathlib import Path
 from typing import Iterator
 from zoneinfo import ZoneInfo
 
-from utils.bot_cli import format_trading_plan, resolve_trading_plan
+from utils.bot_cli import format_daily_trade_usage, format_trading_plan, resolve_trading_plan
+from utils.helpers import load_config
 from utils.bot_process import REPO_ROOT, find_bot_processes_with_elapsed
 
 
@@ -196,12 +197,14 @@ def parse_args() -> argparse.Namespace:
 def main() -> int:
     args = parse_args()
     try:
-        symbols, summary = resolve_trading_plan()
+        config = load_config()
+        symbols, summary = resolve_trading_plan(config)
     except ValueError as exc:
         print(str(exc), file=sys.stderr)
         return 2
 
-    print(format_trading_plan(symbols, summary))
+    print(format_trading_plan(symbols, summary, config))
+    print(format_daily_trade_usage(config))
     matches = find_bot_processes_with_elapsed()
     include_app_logs = not args.no_app_logs
     current_started_at = current_run_started_at(matches) or latest_logged_start_at()

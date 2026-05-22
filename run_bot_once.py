@@ -19,7 +19,7 @@ import sys
 import time
 from pathlib import Path
 
-from utils.bot_cli import format_trading_plan, resolve_trading_plan
+from utils.bot_cli import format_daily_trade_usage, format_trading_plan, resolve_trading_plan
 from utils.bot_process import REPO_ROOT, find_bot_processes
 from utils.helpers import load_config
 
@@ -107,12 +107,14 @@ def _follow_seconds_from_config(cli_seconds: float | None) -> float:
 def main() -> int:
     args = parse_args()
     try:
-        symbols, summary = resolve_trading_plan()
+        config = load_config()
+        symbols, summary = resolve_trading_plan(config)
     except ValueError as exc:
         print(str(exc), file=sys.stderr)
         return 2
 
-    print(format_trading_plan(symbols, summary))
+    print(format_trading_plan(symbols, summary, config))
+    print(format_daily_trade_usage(config))
     follow_seconds = _follow_seconds_from_config(args.seconds)
     if follow_seconds < 0:
         print("--seconds / config follow duration must be zero or greater", file=sys.stderr)
