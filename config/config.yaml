@@ -12,10 +12,10 @@ trading:
       contract_value: 0.001
       quantity: 10
       timeframe: "5m"
-      stop_loss_percent: 0.2
-      take_profit_percent: 0.4
+      stop_loss_percent: 0.4
+      take_profit_percent: 0.8
     ETHUSD:
-      enabled: true
+      enabled: false
       product_id: 3136
       contract_value: 0.01
       quantity: 5
@@ -23,7 +23,7 @@ trading:
       stop_loss_percent: 0.25
       take_profit_percent: 0.5
     XAUTUSD:
-      enabled: true
+      enabled: false
       product_id: 131253
       contract_value: 0.001
       quantity: 10
